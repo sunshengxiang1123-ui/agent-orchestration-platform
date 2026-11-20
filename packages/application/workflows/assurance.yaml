@@ -1,0 +1,11 @@
+# 验证子流程：先做确定性核算，通过后再由独立的审核 Agent 复核。
+id: assurance
+version: 1.0.0
+nodes:
+  - id: check
+    type: verify
+    verifier: travel_constraints
+  - id: review
+    type: agent
+    agent: reviewer
+    depends_on: [check]

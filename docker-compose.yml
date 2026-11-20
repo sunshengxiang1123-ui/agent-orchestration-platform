@@ -1,0 +1,11 @@
+# docker compose up --build   然后打开 http://127.0.0.1:8000
+services:
+  platform:
+    build: .
+    image: agent-orchestration-platform
+    # 只映射到本机回环地址：平台没有用户认证，不要暴露到公网。
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - ./data:/data
+    restart: unless-stopped

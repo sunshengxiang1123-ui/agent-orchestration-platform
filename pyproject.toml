@@ -1,0 +1,54 @@
+[project]
+name = "agent-orchestration-platform"
+version = "0.1.0"
+description = "自研 Agent 编排、调度与离线验证平台"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.115,<1",
+    "uvicorn>=0.30,<1",
+    "sqlalchemy[asyncio]>=2.0,<2.1",
+    "alembic>=1.13,<2",
+    "pydantic>=2,<3",
+    "pydantic-settings>=2,<3",
+    "asyncpg>=0.29,<1",
+    "aiosqlite>=0.20,<1",
+    "httpx>=0.27,<1",
+    "pyyaml>=6,<7",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8,<10",
+    "pytest-asyncio>=0.24,<2",
+    "ruff>=0.8,<1",
+    "mypy>=1.13,<2",
+    "types-PyYAML>=6,<7",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+addopts = '-m "not requires_db and not requires_browser"'
+markers = [
+    "requires_db: 需要真实 PostgreSQL 或 Redis，由人工执行",
+    "requires_browser: 需要真实浏览器，由人工执行",
+]
+filterwarnings = ["error"]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+extend-exclude = [".venv"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "ASYNC"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+plugins = ["pydantic.mypy"]
+
+[tool.uv]
+package = false

@@ -1,0 +1,37 @@
+# 一日旅行规划主工作流。由 packages/core/engine/loader.py 安全加载（只用 safe_load，
+# 校验必填字段、依赖存在性、id 唯一与无环），再交给通用 DAG 执行器运行。
+id: travel
+version: 2.1.0
+inputs:
+  topic: string
+  budget: integer
+nodes:
+  # 并行节点：两个候选同时执行，分别经 MCP 预取景点目录和用户约束。
+  - id: collect
+    type: parallel
+    n_candidates: 2
+
+  # 自我循环：规划 → 嵌套验证子流程；不通过时把失败原因带入下一轮。
+  # max_iterations 会被每次运行的“迭代上限”覆盖；improvement_epsilon 为负数表示
+  # 不按改进幅度提前停止，只受轮数与 token 预算约束。
+  - id: refine
+    type: loop
+    depends_on: [collect]
+    loop:
+      max_iterations: 3
+      budget_tokens: 40000
+      improvement_epsilon: -1
+      body:
+        - id: plan
+          type: agent
+          agent: planner
+        - id: assurance
+          type: subflow
+          subflow: assurance
+          depends_on: [plan]
+
+  # 条件人工关卡：用户勾选“人工审批”时才进入。
+  - id: approval
+    type: human_gate
+    depends_on: [refine]
+    condition: "inputs.human_review == true"

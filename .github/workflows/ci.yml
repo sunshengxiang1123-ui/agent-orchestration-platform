@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install
+        run: uv sync
+      - name: Lint
+        run: |
+          uv run ruff check .
+          uv run ruff format --check .
+      - name: Type check
+        run: uv run mypy packages apps scripts
+      - name: Test
+        run: uv run pytest -q
+      - name: Benchmark (mock)
+        run: uv run python -m scripts.benchmark --latency 0
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build image
+        run: docker build -t agent-orchestration-platform .
+      - name: Smoke test
+        run: |
+          docker run -d --name platform -p 127.0.0.1:8000:8000 agent-orchestration-platform
+          for i in $(seq 1 30); do curl -fsS http://127.0.0.1:8000/health && break; sleep 2; done
+          curl -fsS http://127.0.0.1:8000/api/mcp/tools | python3 -c "import json,sys; assert len(json.load(sys.stdin)['tools']) == 4"
